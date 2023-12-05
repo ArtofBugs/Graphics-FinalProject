@@ -4,7 +4,6 @@
 #include "glm/ext.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
-#define NVIDIA_SHADER_BINARY	0x00008e21		// nvidia binary enum
 
 struct GLshadertype
 {
@@ -13,25 +12,10 @@ struct GLshadertype
 }
 ShaderTypes[] =
 {
-	{ (char*)".cs",   GL_COMPUTE_SHADER },
 	{ (char*)".vert", GL_VERTEX_SHADER },
 	{ (char*)".vs",   GL_VERTEX_SHADER },
 	{ (char*)".frag", GL_FRAGMENT_SHADER },
 	{ (char*)".fs",   GL_FRAGMENT_SHADER },
-	{ (char*)".geom", GL_GEOMETRY_SHADER },
-	{ (char*)".gs",   GL_GEOMETRY_SHADER },
-	{ (char*)".tcs",  GL_TESS_CONTROL_SHADER },
-	{ (char*)".tes",  GL_TESS_EVALUATION_SHADER },
-};
-
-struct GLbinarytype
-{
-	char* extension;
-	GLenum format;
-}
-BinaryTypes[] =
-{
-	{ (char *)".nvb",    NVIDIA_SHADER_BINARY },
 };
 
 extern GLchar* Gstap;		// set later
@@ -59,26 +43,23 @@ GetExtension(char* file)
 
 GLSLProgram::GLSLProgram()
 {
+
+}
+
+
+void
+GLSLProgram::Init()
+{
 	Verbose = false;
 	InputTopology = GL_TRIANGLES;
 	OutputTopology = GL_TRIANGLE_STRIP;
 
-	CanDoComputeShaders = IsExtensionSupported("GL_ARB_compute_shader");
 	CanDoVertexShaders = IsExtensionSupported("GL_ARB_vertex_shader");
-	CanDoTessControlShaders = IsExtensionSupported("GL_ARB_tessellation_shader");
-	CanDoTessEvaluationShaders = CanDoTessControlShaders;
-	CanDoGeometryShaders = IsExtensionSupported("GL_EXT_geometry_shader4");
 	CanDoFragmentShaders = IsExtensionSupported("GL_ARB_fragment_shader");
-	CanDoBinaryFiles = IsExtensionSupported("GL_ARB_get_program_binary");
 
 	fprintf(stderr, "Can do: ");
-	if (CanDoComputeShaders)		fprintf(stderr, "compute shaders, ");
 	if (CanDoVertexShaders)		fprintf(stderr, "vertex shaders, ");
-	if (CanDoTessControlShaders)		fprintf(stderr, "tess control shaders, ");
-	if (CanDoTessEvaluationShaders)	fprintf(stderr, "tess evaluation shaders, ");
-	if (CanDoGeometryShaders)		fprintf(stderr, "geometry shaders, ");
-	if (CanDoFragmentShaders)		fprintf(stderr, "fragment shaders, ");
-	if (CanDoBinaryFiles)			fprintf(stderr, "binary shader files ");
+	if (CanDoFragmentShaders)	fprintf(stderr, "fragment shaders, ");
 	fprintf(stderr, "\n");
 }
 
@@ -128,21 +109,7 @@ GLSLProgram::CreateHelper(char* file0, ...)
 	int type;
 	while (file != NULL)
 	{
-		int maxBinaryTypes = sizeof(BinaryTypes) / sizeof(struct GLbinarytype);
-		type = -1;
 		char* extension = GetExtension(file);
-		// fprintf( stderr, "File = '%s', extension = '%s'\n", file, extension );
-
-		for (int i = 0; i < maxBinaryTypes; i++)
-		{
-			if (strcmp(extension, BinaryTypes[i].extension) == 0)
-			{
-				// fprintf( stderr, "Legal extension = '%s'\n", extension );
-				LoadProgramBinary(file, BinaryTypes[i].format);
-				break;
-			}
-		}
-
 		int maxShaderTypes = sizeof(ShaderTypes) / sizeof(struct GLshadertype);
 		for (int i = 0; i < maxShaderTypes; i++)
 		{
@@ -160,12 +127,6 @@ GLSLProgram::CreateHelper(char* file0, ...)
 		{
 			fprintf(stderr, "Unknown filename extension: '%s'\n", extension);
 			fprintf(stderr, "Legal Extensions are: ");
-			for (int i = 0; i < maxBinaryTypes; i++)
-			{
-				if (i != 0)	fprintf(stderr, " , ");
-				fprintf(stderr, "%s", BinaryTypes[i].extension);
-			}
-			fprintf(stderr, "\n");
 			for (int i = 0; i < maxShaderTypes; i++)
 			{
 				if (i != 0)	fprintf(stderr, " , ");
@@ -180,19 +141,6 @@ GLSLProgram::CreateHelper(char* file0, ...)
 		{
 			switch (ShaderTypes[type].name)
 			{
-			case GL_COMPUTE_SHADER:
-				if (!CanDoComputeShaders)
-				{
-					fprintf(stderr, "Warning: this system cannot handle compute shaders\n");
-					Valid = false;
-					SkipToNextVararg = true;
-				}
-				else
-				{
-					shader = glCreateShader(GL_COMPUTE_SHADER);
-				}
-				break;
-
 			case GL_VERTEX_SHADER:
 				if (!CanDoVertexShaders)
 				{
@@ -203,48 +151,6 @@ GLSLProgram::CreateHelper(char* file0, ...)
 				else
 				{
 					shader = glCreateShader(GL_VERTEX_SHADER);
-				}
-				break;
-
-			case GL_TESS_CONTROL_SHADER:
-				if (!CanDoTessControlShaders)
-				{
-					fprintf(stderr, "Warning: this system cannot handle tessellation control shaders\n");
-					Valid = false;
-					SkipToNextVararg = true;
-				}
-				else
-				{
-					shader = glCreateShader(GL_TESS_CONTROL_SHADER);
-				}
-				break;
-
-			case GL_TESS_EVALUATION_SHADER:
-				if (!CanDoTessEvaluationShaders)
-				{
-					fprintf(stderr, "Warning: this system cannot handle tessellation evaluation shaders\n");
-					Valid = false;
-					SkipToNextVararg = true;
-				}
-				else
-				{
-					shader = glCreateShader(GL_TESS_EVALUATION_SHADER);
-				}
-				break;
-
-			case GL_GEOMETRY_SHADER:
-				if (!CanDoGeometryShaders)
-				{
-					fprintf(stderr, "Warning: this system cannot handle geometry shaders\n");
-					Valid = false;
-					SkipToNextVararg = true;
-				}
-				else
-				{
-					//glProgramParameteriEXT( Program, GL_GEOMETRY_INPUT_TYPE_EXT,  InputTopology );
-					//glProgramParameteriEXT( Program, GL_GEOMETRY_OUTPUT_TYPE_EXT, OutputTopology );
-					//glProgramParameteriEXT( Program, GL_GEOMETRY_VERTICES_OUT_EXT, 1024 );
-					shader = glCreateShader(GL_GEOMETRY_SHADER);
 				}
 				break;
 
@@ -409,14 +315,6 @@ GLSLProgram::CreateHelper(char* file0, ...)
 }
 
 
-void
-GLSLProgram::DispatchCompute(GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z)
-{
-	Use();
-	glDispatchCompute(num_groups_x, num_groups_y, num_groups_z);
-}
-
-
 bool
 GLSLProgram::IsValid()
 {
@@ -436,6 +334,13 @@ GLSLProgram::SetVerbose(bool v)
 {
 	Verbose = v;
 }
+
+void
+GLSLProgram::UnUse()
+{
+	Use(0);
+}
+
 
 
 void
@@ -618,7 +523,7 @@ GLSLProgram::SetAttributeVariable(char* name, VertexBufferObject& vb, GLenum whi
 		GLSLProgram::SetUniformVariable(char* name, float val)
 	{
 		int loc;
-		
+
 		if ((loc = GetUniformLocation(name)) >= 0)
 		{
 			this->Use();
@@ -652,7 +557,7 @@ GLSLProgram::SetAttributeVariable(char* name, VertexBufferObject& vb, GLenum whi
 	};
 
 	void
-	GLSLProgram::SetUniformVariable(char* name, glm::mat4& matrix)
+		GLSLProgram::SetUniformVariable(char* name, glm::mat4 & matrix)
 	{
 		int loc;
 
@@ -666,7 +571,7 @@ GLSLProgram::SetAttributeVariable(char* name, VertexBufferObject& vb, GLenum whi
 	};
 
 	void
-		GLSLProgram::SetUniformVariable(char* name, glm::vec3& vec)
+		GLSLProgram::SetUniformVariable(char* name, glm::vec3 & vec)
 	{
 		int loc;
 
@@ -674,13 +579,13 @@ GLSLProgram::SetAttributeVariable(char* name, VertexBufferObject& vb, GLenum whi
 		{
 			this->Use();
 			//fprintf(stderr, "%s vec3\n", name);
-			glUniform3fv(loc, 1, value_ptr(vec) );
+			glUniform3fv(loc, 1, value_ptr(vec));
 		}
 	};
 
-	
-	
-	
+
+
+
 
 
 
@@ -785,67 +690,13 @@ GLSLProgram::SetAttributeVariable(char* name, VertexBufferObject& vb, GLenum whi
 
 
 	void
-		GLSLProgram::SaveProgramBinary(const char* fileName, GLenum * format)
-	{
-		glProgramParameteri(this->Program, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
-		GLint length;
-		glGetProgramiv(this->Program, GL_PROGRAM_BINARY_LENGTH, &length);
-		GLubyte* buffer = new GLubyte[length];
-		glGetProgramBinary(this->Program, length, NULL, format, buffer);
-
-		fprintf(stderr, "Program binary format = 0x%04x\n", *format);
-
-		FILE* fpout = fopen(fileName, "wb");
-		if (fpout == NULL)
-		{
-			fprintf(stderr, "Cannot create output GLSL binary file '%s'\n", fileName);
-			return;
-		}
-		fwrite(buffer, length, 1, fpout);
-		fclose(fpout);
-		delete[] buffer;
-	}
-
-
-	void
-		GLSLProgram::LoadProgramBinary(const char* fileName, GLenum format)
-	{
-		FILE* fpin = fopen(fileName, "rb");
-		if (fpin == NULL)
-		{
-			fprintf(stderr, "Cannot open input GLSL binary file '%s'\n", fileName);
-			return;
-		}
-		fseek(fpin, 0, SEEK_END);
-		GLint length = (GLint)ftell(fpin);
-		GLubyte* buffer = new GLubyte[length];
-		rewind(fpin);
-		fread(buffer, length, 1, fpin);
-		fclose(fpin);
-
-		glProgramBinary(this->Program, format, buffer, length);
-		delete[] buffer;
-
-		GLint   success;
-		glGetProgramiv(this->Program, GL_LINK_STATUS, &success);
-
-		if (!success)
-		{
-			fprintf(stderr, "Did not successfully load the GLSL binary file '%s'\n", fileName);
-			return;
-		}
-	}
-
-
-
-	void
 		GLSLProgram::SetGstap(bool b)
 	{
 		IncludeGstap = b;
 	}
 
 
-	const char *tmp =
+	const char* tmp =
 	{
 	"#ifndef GSTAP_H\n\
 #define GSTAP_H\n\
