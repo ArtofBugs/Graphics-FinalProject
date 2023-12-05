@@ -6,6 +6,12 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#ifndef F_PI
+#define F_PI		((float)(M_PI))
+#define F_2_PI		((float)(2.f*F_PI))
+#define F_PI_2		((float)(F_PI/2.f))
+#endif
+
 #ifdef WIN32
 #include <windows.h>
 #pragma warning(disable:4996)
@@ -14,7 +20,9 @@
 #include "glew.h"
 #include <GL/gl.h>
 #include <GL/glu.h>
+
 #include "glut.h"
+
 #include "glm/glm.hpp"
 #include "glm/ext.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -27,6 +35,12 @@
 // title of the window:
 
 const char *WINDOWTITLE = { "Sample Shadows Program -- Joe Graphics" };
+const char* GLUITITLE = "User Interface Window";
+
+// what the glui package defines as true and false:
+
+const int GLUITRUE = true;
+const int GLUIFALSE = false;
 
 // the escape key:
 
@@ -45,6 +59,15 @@ const float SCLFACT = { 0.005f };
 // minimum allowable scale factor:
 
 const float MINSCALE = { 0.05f };
+
+// scroll wheel button values:
+
+const int SCROLL_WHEEL_UP = 3;
+const int SCROLL_WHEEL_DOWN = 4;
+
+// equivalent mouse movement when we click the scroll wheel:
+
+const float SCROLL_WHEEL_CLICK_FACTOR = 5.f;
 
 // active mouse buttons (or them together):
 
@@ -140,10 +163,22 @@ void	Visibility( int );
 
 void	Axes( float );
 void	HsvRgb( float[3], float [3] );
-void	OsuSphere(float radius, int slices, int stacks);
+// void	OsuSphere(float radius, int slices, int stacks);
 void	Cross(float v1[3], float v2[3], float vout[3]);
 void	DrawPoint(struct point *p);
 float	Unit(float vin[3], float vout[3]);
+
+// these are here for when you need them -- just uncomment the ones you need:
+
+//#include "setmaterial.cpp"
+//#include "setlight.cpp"
+//#include "osusphere.cpp"
+//#include "osucone.cpp"
+#include "osutorus.cpp"
+//#include "bmptotexture.cpp"
+//#include "loadobjfile.cpp"
+//#include "keytime.cpp"
+#include "glslprogram.cpp"
 
 
 
@@ -152,6 +187,7 @@ float	Unit(float vin[3], float vout[3]);
 int
 main( int argc, char *argv[ ] )
 {
+	fprintf(stderr, "Starting.\n");
 	glutInit( &argc, argv );
 	InitGraphics( );
 	InitLists( );
@@ -376,6 +412,7 @@ DrawPoint(struct point* p)
 }
 
 
+/*
 void
 OsuSphere(float radius, int slices, int stacks)
 {
@@ -493,6 +530,7 @@ OsuSphere(float radius, int slices, int stacks)
 	delete[ ] Pts;
 	Pts = NULL;
 }
+*/
 
 
 void
@@ -681,6 +719,8 @@ InitGraphics( )
 		fprintf(stderr, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
 	}
 
+	// all other setups go here, such as GLSLProgram and KeyTime setups:
+
 	GetDepth = new GLSLProgram();
 	bool valid = GetDepth->Create((char*)"GetDepth.vert", (char*)"GetDepth.frag");
 	if (!valid)
@@ -788,7 +828,7 @@ InitLists( )
 {
 	SphereList = glGenLists(1);
 	glNewList(SphereList, GL_COMPILE);
-	OsuSphere(5.,80,80);
+	OsuTorus(5,6,20, 20);
 	glEndList();
 
 	// create the axes:
@@ -853,36 +893,50 @@ Keyboard( unsigned char c, int x, int y )
 // called when the mouse button transitions down or up:
 
 void
-MouseButton( int button, int state, int x, int y )
+MouseButton(int button, int state, int x, int y)
 {
 	int b = 0;			// LEFT, MIDDLE, or RIGHT
 
-	if( DebugOn != 0 )
-		fprintf( stderr, "MouseButton: %d, %d, %d, %d\n", button, state, x, y );
+	if (DebugOn != 0)
+		fprintf(stderr, "MouseButton: %d, %d, %d, %d\n", button, state, x, y);
 
-	
+
 	// get the proper button bit mask:
 
-	switch( button )
+	switch (button)
 	{
-		case GLUT_LEFT_BUTTON:
-			b = LEFT;		break;
+	case GLUT_LEFT_BUTTON:
+		b = LEFT;		break;
 
-		case GLUT_MIDDLE_BUTTON:
-			b = MIDDLE;		break;
+	case GLUT_MIDDLE_BUTTON:
+		b = MIDDLE;		break;
 
-		case GLUT_RIGHT_BUTTON:
-			b = RIGHT;		break;
+	case GLUT_RIGHT_BUTTON:
+		b = RIGHT;		break;
 
-		default:
-			b = 0;
-			fprintf( stderr, "Unknown mouse button: %d\n", button );
+	case SCROLL_WHEEL_UP:
+		Scale += SCLFACT * SCROLL_WHEEL_CLICK_FACTOR;
+		// keep object from turning inside-out or disappearing:
+		if (Scale < MINSCALE)
+			Scale = MINSCALE;
+		break;
+
+	case SCROLL_WHEEL_DOWN:
+		Scale -= SCLFACT * SCROLL_WHEEL_CLICK_FACTOR;
+		// keep object from turning inside-out or disappearing:
+		if (Scale < MINSCALE)
+			Scale = MINSCALE;
+		break;
+
+	default:
+		b = 0;
+		fprintf( stderr, "Unknown mouse button: %d\n", button );
 	}
 
 
 	// button down sets the bit, up clears the bit:
 
-	if( state == GLUT_DOWN )
+	if ( state == GLUT_DOWN )
 	{
 		Xmouse = x;
 		Ymouse = y;
@@ -892,6 +946,10 @@ MouseButton( int button, int state, int x, int y )
 	{
 		ActiveButton &= ~b;		// clear the proper bit
 	}
+
+	glutSetWindow(MainWindow);
+	glutPostRedisplay();
+
 }
 
 
@@ -1186,5 +1244,3 @@ HsvRgb( float hsv[3], float rgb[3] )
 	rgb[1] = g;
 	rgb[2] = b;
 }
-
-#include "glslprogram.cpp"
