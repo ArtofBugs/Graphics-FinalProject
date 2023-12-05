@@ -1,0 +1,5 @@
+
+ERROR: 0:12: '=' :  cannot convert from 'highp float' to '3-component vector of highp float'
+ERROR: 0:14: 'constructor' : too many arguments 
+
+
