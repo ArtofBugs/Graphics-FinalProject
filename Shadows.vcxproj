@@ -140,11 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="glslprogram.cpp" />
     <ClCompile Include="shadows.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="glslprogram.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

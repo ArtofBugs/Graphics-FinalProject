@@ -722,6 +722,7 @@ InitGraphics( )
 	// all other setups go here, such as GLSLProgram and KeyTime setups:
 
 	GetDepth = new GLSLProgram();
+	GetDepth->Init();
 	bool valid = GetDepth->Create((char*)"GetDepth.vert", (char*)"GetDepth.frag");
 	if (!valid)
 	{
@@ -734,6 +735,7 @@ InitGraphics( )
 	GetDepth->SetVerbose(false);
 	
 	RenderWithShadows = new GLSLProgram();
+	RenderWithShadows->Init();
 	valid = RenderWithShadows->Create((char*)"RenderWithShadows.vert", (char*)"RenderWithShadows.frag");
 	if (!valid)
 	{
@@ -746,6 +748,7 @@ InitGraphics( )
 	RenderWithShadows->SetVerbose(false);
 
 	DisplayShadowMap = new GLSLProgram();
+	DisplayShadowMap->Init();
 	valid = DisplayShadowMap->Create((char*)"DisplayShadowMap.vert", (char*)"DisplayShadowMap.frag");
 	if (!valid)
 	{

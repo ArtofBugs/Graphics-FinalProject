@@ -178,8 +178,8 @@ GLSLProgram::CreateHelper(char* file0, ...)
 			int length;
 			FILE* logfile;
 
-			in = fopen(file, "rb");
-			if (in == NULL)
+			errno_t err = fopen_s(&in, file, "rb");
+			if (err != 0)
 			{
 				fprintf(stderr, "Cannot open shader file '%s'\n", file);
 				Valid = false;
@@ -232,8 +232,8 @@ GLSLProgram::CreateHelper(char* file0, ...)
 						GLchar* infoLog = new GLchar[infoLogLen + 1];
 						glGetShaderInfoLog(shader, infoLogLen, NULL, infoLog);
 						infoLog[infoLogLen] = '\0';
-						logfile = fopen("glsllog.txt", "w");
-						if (logfile != NULL)
+						errno_t log_err = fopen_s(&logfile, "glsllog.txt", "w");
+						if (log_err == 0)
 						{
 							fprintf(logfile, "\n%s\n", infoLog);
 							fclose(logfile);
