@@ -34,7 +34,7 @@
 
 // title of the window:
 
-const char *WINDOWTITLE = { "Sample Shadows Program -- Joe Graphics" };
+const char *WINDOWTITLE = { "Bread Builder" };
 const char* GLUITITLE = "User Interface Window";
 
 // what the glui package defines as true and false:
@@ -116,7 +116,7 @@ int		AxesOn;					// != 0 means to draw the axes
 int		DebugOn;				// != 0 means to print debugging info
 bool	DepthMapOn;				// true means to see the depth map
 bool	Frozen;
-GLuint  TowerList;
+GLuint  BaseList;
 GLuint  SideList;
 GLuint  RoofList;
 int		MainWindow;				// window id for main graphics window
@@ -133,12 +133,20 @@ float	LightZ =  10.;
 GLuint	DepthFramebuffer;
 GLuint	DepthTexture;
 
+int		currNumTowers = 7;
+int		currNumCastles = 2;
+
 const int		TOWER_SEGMENTS = 50;
 const float 	TOWER_HEIGHT = 10.;
-const float 	TOWER_RADIUS = 2.;
+const float 	SIDE_RADIUS = 2.;
 const float 	ROOF_HEIGHT = TOWER_HEIGHT / 5.f;
-const float		ROOF_RADIUS = TOWER_RADIUS + 0.2f;
+const float		ROOF_RADIUS = SIDE_RADIUS + 0.2f;
 const int 		ROOF_STACKS = TOWER_SEGMENTS;
+const int		BASE_SEGMENTS = 50;
+const float 	BASE_HEIGHT = 8.;
+const float 	BASE_RADIUS = 5.;
+
+const float		RING_RADIUS = 10.;
 
 const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
 
@@ -362,21 +370,39 @@ Display( )
 void
 DisplayOneScene(GLSLProgram * prog )
 {
-	glm::mat4 model = glm::mat4(1.f);
+	glm::mat4 model;
+	glm::vec3 color;
 
-	//render a tower:
-	model = glm::mat4(1.f);
-	prog->SetUniformVariable((char*)"uModel", model);
-	glm::vec3 color = glm::vec3(1., 1., 0.);
-	prog->SetUniformVariable((char*)"uColor", color );
-	glCallList(SideList);
+	for (float i = 0; i < (float)currNumCastles; i++) {
+		// render a base:
+		model = glm::mat4(1.f);
+		model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * i), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * i)));
 
-	model = glm::mat4(1.f);
-	model = glm::translate(model, glm::vec3(0., TOWER_HEIGHT, 0.));
-	prog->SetUniformVariable((char*)"uModel", model);
-	color = glm::vec3(1., 0., 0.);
-	prog->SetUniformVariable((char*)"uColor", color);
-	glCallList(RoofList);
+		prog->SetUniformVariable((char*)"uModel", model);
+		color = glm::vec3(1., 1., 0.);
+		prog->SetUniformVariable((char*)"uColor", color);
+		glCallList(BaseList);
+
+		for (float j = 0.; j < (float)currNumTowers; j++) {
+			// render a tower:
+			model = glm::mat4(1.f);
+			model = glm::translate(model, glm::vec3((BASE_RADIUS + SIDE_RADIUS) * cos(F_2_PI / currNumTowers * j), 0, (BASE_RADIUS + SIDE_RADIUS) * sin(F_2_PI / currNumTowers * j)));
+			model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * i), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * i)));
+			prog->SetUniformVariable((char*)"uModel", model);
+			glm::vec3 color = glm::vec3(1., 1., 0.);
+			prog->SetUniformVariable((char*)"uColor", color );
+			glCallList(SideList);
+
+			model = glm::mat4(1.f);
+			model = glm::translate(model, glm::vec3((BASE_RADIUS + SIDE_RADIUS) * cos(F_2_PI / currNumTowers * j), TOWER_HEIGHT, (BASE_RADIUS + SIDE_RADIUS) * sin(F_2_PI / currNumTowers * j)));
+			model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * i), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * i)));
+			prog->SetUniformVariable((char*)"uModel", model);
+			color = glm::vec3(1., 0., 0.);
+			prog->SetUniformVariable((char*)"uColor", color);
+			glCallList(RoofList);
+		}
+
+	}
 
 	//Render cubes:
 	model = glm::mat4(1.f);
@@ -858,16 +884,14 @@ InitLists( )
 	SideList = glGenLists(1);
 	glNewList(SideList, GL_COMPILE);
 	glPushMatrix();
-	OsuCone(TOWER_RADIUS, TOWER_RADIUS, TOWER_HEIGHT, TOWER_SEGMENTS, 1);  // cone with same top and bottom radius = cylinder!
+	OsuCone(SIDE_RADIUS, SIDE_RADIUS, TOWER_HEIGHT, TOWER_SEGMENTS, 1);  // cone with same top and bottom radius = cylinder!
 	glPopMatrix();
 	glEndList();
 
-	TowerList = glGenLists(1);
-	glNewList(TowerList, GL_COMPILE);
+	BaseList = glGenLists(1);
+	glNewList(BaseList, GL_COMPILE);
 	glPushMatrix();
-	glCallList(SideList);
-	glTranslatef(TOWER_HEIGHT, TOWER_HEIGHT, 0.f);
-	glCallList(RoofList);
+	OsuCone(BASE_RADIUS, BASE_RADIUS, BASE_HEIGHT, BASE_SEGMENTS, 1);  // cone with same top and bottom radius = cylinder!
 	glPopMatrix();
 	glEndList();
 
