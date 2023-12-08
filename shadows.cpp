@@ -116,7 +116,9 @@ int		AxesOn;					// != 0 means to draw the axes
 int		DebugOn;				// != 0 means to print debugging info
 bool	DepthMapOn;				// true means to see the depth map
 bool	Frozen;
-GLuint  SphereList;
+GLuint  TowerList;
+GLuint  SideList;
+GLuint  RoofList;
 int		MainWindow;				// window id for main graphics window
 float	Scale;					// scaling factor
 bool	ShadowOn;				// true means to see the shadow
@@ -130,6 +132,13 @@ float	LightZ =  10.;
 
 GLuint	DepthFramebuffer;
 GLuint	DepthTexture;
+
+const int		TOWER_SEGMENTS = 50;
+const float 	TOWER_HEIGHT = 10.;
+const float 	TOWER_RADIUS = 2.;
+const float 	ROOF_HEIGHT = TOWER_HEIGHT / 5.f;
+const float		ROOF_RADIUS = TOWER_RADIUS + 0.2f;
+const int 		ROOF_STACKS = TOWER_SEGMENTS;
 
 const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
 
@@ -173,8 +182,8 @@ float	Unit(float vin[3], float vout[3]);
 //#include "setmaterial.cpp"
 //#include "setlight.cpp"
 //#include "osusphere.cpp"
-//#include "osucone.cpp"
-#include "osutorus.cpp"
+#include "osucone.cpp"
+//#include "osutorus.cpp"
 //#include "bmptotexture.cpp"
 //#include "loadobjfile.cpp"
 //#include "keytime.cpp"
@@ -353,12 +362,21 @@ Display( )
 void
 DisplayOneScene(GLSLProgram * prog )
 {
-	//render a sphere:
 	glm::mat4 model = glm::mat4(1.f);
+
+	//render a tower:
+	model = glm::mat4(1.f);
 	prog->SetUniformVariable((char*)"uModel", model);
 	glm::vec3 color = glm::vec3(1., 1., 0.);
 	prog->SetUniformVariable((char*)"uColor", color );
-	glCallList(SphereList);
+	glCallList(SideList);
+
+	model = glm::mat4(1.f);
+	model = glm::translate(model, glm::vec3(0., TOWER_HEIGHT, 0.));
+	prog->SetUniformVariable((char*)"uModel", model);
+	color = glm::vec3(1., 0., 0.);
+	prog->SetUniformVariable((char*)"uColor", color);
+	glCallList(RoofList);
 
 	//Render cubes:
 	model = glm::mat4(1.f);
@@ -829,9 +847,28 @@ Unit(float vin[3], float vout[3])
 void
 InitLists( )
 {
-	SphereList = glGenLists(1);
-	glNewList(SphereList, GL_COMPILE);
-	OsuTorus(5,6,20, 20);
+
+	RoofList = glGenLists(1);
+	glNewList(RoofList, GL_COMPILE);
+	glPushMatrix();
+	OsuCone(ROOF_RADIUS, 0.f, ROOF_HEIGHT, TOWER_SEGMENTS, ROOF_STACKS);
+	glPopMatrix();
+	glEndList();
+
+	SideList = glGenLists(1);
+	glNewList(SideList, GL_COMPILE);
+	glPushMatrix();
+	OsuCone(TOWER_RADIUS, TOWER_RADIUS, TOWER_HEIGHT, TOWER_SEGMENTS, 1);  // cone with same top and bottom radius = cylinder!
+	glPopMatrix();
+	glEndList();
+
+	TowerList = glGenLists(1);
+	glNewList(TowerList, GL_COMPILE);
+	glPushMatrix();
+	glCallList(SideList);
+	glTranslatef(TOWER_HEIGHT, TOWER_HEIGHT, 0.f);
+	glCallList(RoofList);
+	glPopMatrix();
 	glEndList();
 
 	// create the axes:
