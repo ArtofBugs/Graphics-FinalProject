@@ -12,6 +12,7 @@ out vec4 vFragPosLightSpace;
 out vec3 vNs;
 out vec3 vLs;
 out vec3 vEs;
+out vec2 vST;
 
 void
 main()
@@ -23,6 +24,7 @@ main()
 	vNs = tnorm;
 	vLs = LightPosition      - ECposition.xyz;
 	vEs = vec3( 0., 0., 0. ) - ECposition.xyz;
+        vST = gl_MultiTexCoord0.st;
         
 	vFragPosLightSpace = uLightSpaceMatrix  * uModel * gl_Vertex;
 	gl_Position        = uProj * uView      * uModel * gl_Vertex;

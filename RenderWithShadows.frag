@@ -2,12 +2,14 @@
 
 uniform vec3      uColor;
 uniform sampler2D uShadowMap;
+uniform sampler2D uTexUnit;
 uniform int       uShadowsOn;
 
 in vec4 vFragPosLightSpace;
 in vec3 vNs;
 in vec3 vLs;
 in vec3 vEs;
+in vec2 vST;
 
 out vec4 fFragColor;
 
@@ -51,12 +53,12 @@ main()
     float d = 0.;
     float s = 0.;
     
-    vec3 myColor = uColor;
-	myColor = vec3( 0.8 * dot(vNs, vEs) * dot(vNs, vEs) * 0.1, 0.7 * dot(vNs, vEs), 0.5 * dot(vNs, vEs) * dot(vNs, vEs) * 0.1);
+    vec3 myColor = texture(uTexUnit, vST).rgb;
+	//myColor = vec3( 0.8 * dot(vNs, vEs) * dot(vNs, vEs) * 0.1, 0.7 * dot(vNs, vEs), 0.5 * dot(vNs, vEs) * dot(vNs, vEs) * 0.1);
 
     vec3 lighting = KA * myColor;
 
-    bool isInShadow = IsInShadow(vFragPosLightSpace);  
+    bool isInShadow = IsInShadow(vFragPosLightSpace);
     if( uShadowsOn != 0 )
         isInShadow = false;     // if in ShadowOff mode, nothing should be cnsidered in a shadow
     if( ! isInShadow )

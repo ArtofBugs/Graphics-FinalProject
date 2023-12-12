@@ -126,6 +126,8 @@ bool	ShadowOn;				// true means to see the shadow
 int		WhichProjection;		// ORTHO or PERSP
 int		Xmouse, Ymouse;			// mouse values
 float	Xrot, Yrot;				// rotation angles in degrees
+unsigned char* Texture;
+GLuint	CrumbTex;
 int		NowCastle;				// current castle to edit
 
 
@@ -213,7 +215,7 @@ float	Unit(float vin[3], float vout[3]);
 #include "osusphere.cpp"
 #include "osucone.cpp"
 //#include "osutorus.cpp"
-//#include "bmptotexture.cpp"
+#include "bmptotexture.cpp"
 //#include "loadobjfile.cpp"
 //#include "keytime.cpp"
 #include "glslprogram.cpp"
@@ -338,6 +340,9 @@ Display( )
 	else
 	{
 		RenderWithShadows->Use();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, CrumbTex);
+		RenderWithShadows->SetUniformVariable((char*)"uTexUnit", 0);
 		RenderWithShadows->SetUniformVariable((char*)"uShadowMap", 0);
 		RenderWithShadows->SetUniformVariable((char*)"uShadowsOn", ShadowOn ? 1 : 0 );
 		RenderWithShadows->SetUniformVariable((char*)"uLightX", LightX);
@@ -797,6 +802,26 @@ InitGraphics( )
 	}
 
 	// all other setups go here, such as GLSLProgram and KeyTime setups:
+
+
+	glGenTextures(1, &CrumbTex);
+	int nums, numt;
+	char* file = (char*)"crumbs2.bmp";  // taken from https://pixabay.com/photos/bread-loaf-artisan-artisan-bread-1510155/
+	                                    // then cropped, converted to bmp, and then taken through GIMP to fix it (thank you Prof. Bailey!)
+	Texture = BmpToTexture(file, &nums, &numt);
+	if (Texture == NULL)
+		fprintf(stderr, "Cannot open texture '%s'\n", file);
+	else
+		fprintf(stderr, "Opened '%s': width = %d ; height = %d\n", file, nums, numt);
+	glBindTexture(GL_TEXTURE_2D, CrumbTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, 3, nums, numt, 0, GL_RGB, GL_UNSIGNED_BYTE, Texture);
+
+
+
 
 	GetDepth = new GLSLProgram();
 	GetDepth->Init();
