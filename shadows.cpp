@@ -119,6 +119,7 @@ bool	Frozen;
 GLuint  BaseList;
 GLuint  SideList;
 GLuint  RoofList;
+GLuint	SphereList;
 int		MainWindow;				// window id for main graphics window
 float	Scale;					// scaling factor
 bool	ShadowOn;				// true means to see the shadow
@@ -128,9 +129,12 @@ float	Xrot, Yrot;				// rotation angles in degrees
 int		NowCastle;				// current castle to edit
 
 
-float	LightX =  -2.;
-float	LightY =  15.;
+float	LightX =  -2;
+float	LightY =  25;
 float	LightZ =  10.;
+float	EyeX = -2;
+float	EyeY = 25;
+float	EyeZ = 10.;
 
 GLuint	DepthFramebuffer;
 GLuint	DepthTexture;
@@ -206,7 +210,7 @@ float	Unit(float vin[3], float vout[3]);
 
 //#include "setmaterial.cpp"
 //#include "setlight.cpp"
-//#include "osusphere.cpp"
+#include "osusphere.cpp"
 #include "osucone.cpp"
 //#include "osutorus.cpp"
 //#include "bmptotexture.cpp"
@@ -339,6 +343,10 @@ Display( )
 		RenderWithShadows->SetUniformVariable((char*)"uLightX", LightX);
 		RenderWithShadows->SetUniformVariable((char*)"uLightY", LightY);
 		RenderWithShadows->SetUniformVariable((char*)"uLightZ", LightZ);
+
+		RenderWithShadows->SetUniformVariable((char*)"uEyeX", EyeX);
+		RenderWithShadows->SetUniformVariable((char*)"uEyeY", EyeY);
+		RenderWithShadows->SetUniformVariable((char*)"uEyeZ", EyeZ);
 		RenderWithShadows->SetUniformVariable((char*)"uLightSpaceMatrix", lightSpaceMatrix);
 
 		glm::vec3 eye = glm::vec3(0., 0., 8.);
@@ -363,21 +371,26 @@ Display( )
 		RenderWithShadows->Use(0);
 	}
 
-		// possibly draw the axes:
-		if (AxesOn != 0)
-		{
-			glMatrixMode(GL_PROJECTION);
-			glLoadIdentity();
-			gluPerspective(90., 1., .1, 1000.);
-			glMatrixMode(GL_MODELVIEW);
-			glLoadIdentity();
-			gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
-			glScalef((GLfloat)Scale, (GLfloat)Scale, (GLfloat)Scale);
-			glRotatef(Yrot, 0., 1., 0.);
-			glRotatef(Xrot, 1., 0., 0.);
-			glColor3f(1., 1., 1.);
-			glCallList(AxesList);
-		}
+	// possibly draw the axes:
+	if (AxesOn != 0)
+	{
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluPerspective(90., 1., .1, 1000.);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
+		glScalef((GLfloat)Scale, (GLfloat)Scale, (GLfloat)Scale);
+		glRotatef(Yrot, 0., 1., 0.);
+		glRotatef(Xrot, 1., 0., 0.);
+		glColor3f(1., 1., 1.);
+		glCallList(AxesList);
+	}
+
+	glPushMatrix();
+	glTranslatef(LightX, LightY, LightZ);
+	glCallList(SphereList);
+	glPopMatrix();
 
 
 	glutSwapBuffers( );
@@ -389,6 +402,7 @@ DisplayOneScene(GLSLProgram * prog )
 {
 	glm::mat4 model;
 	glm::vec3 color;
+
 
 	for (float i = 0; i < (float)currNumCastles; i++) {
 		// render a base:
@@ -421,6 +435,7 @@ DisplayOneScene(GLSLProgram * prog )
 
 	}
 
+	/*
 	//Render cubes:
 	model = glm::mat4(1.f);
 	model = glm::translate(model, glm::vec3(-1., 2.5 + 2.f * sin(M_PI * Time), 6.f));
@@ -439,6 +454,7 @@ DisplayOneScene(GLSLProgram * prog )
 	color = glm::vec3(0., 1., 0.);
 	prog->SetUniformVariable((char*)"uColor", color);
 	glutSolidCube(2.);
+	*/
 
 	prog->Use(0);
 }
@@ -911,6 +927,14 @@ InitLists( )
 	OsuCone(BASE_RADIUS, BASE_RADIUS, BASE_HEIGHT, BASE_SEGMENTS, 1);  // cone with same top and bottom radius = cylinder!
 	glPopMatrix();
 	glEndList();
+
+	SphereList = glGenLists(1);
+	glNewList(SphereList, GL_COMPILE);
+	glPushMatrix();
+	OsuSphere(1, 10, 10);
+	glPopMatrix();
+	glEndList();
+
 
 	// create the axes:
 

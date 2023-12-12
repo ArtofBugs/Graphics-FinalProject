@@ -12,8 +12,8 @@ in vec3 vEs;
 out vec4 fFragColor;
 
 const float BIAS =  0.01;
-const vec3  SPECULAR_COLOR = vec3( 1., 1., 1. );
-const float SHININESS = 8;
+const vec3  SPECULAR_COLOR = vec3( .1, .1, .1 );
+const float SHININESS = 0.1;
 
 const float KA = 0.20;
 const float KD = 0.60;
@@ -51,7 +51,10 @@ main()
     float d = 0.;
     float s = 0.;
     
-    vec3 lighting = KA * uColor;
+    vec3 myColor = uColor;
+	myColor = vec3( 0.8 * dot(vNs, vEs) * dot(vNs, vEs) * 0.1, 0.7 * dot(vNs, vEs), 0.5 * dot(vNs, vEs) * dot(vNs, vEs) * 0.1);
+
+    vec3 lighting = KA * myColor;
 
     bool isInShadow = IsInShadow(vFragPosLightSpace);  
     if( uShadowsOn != 0 )
@@ -61,7 +64,7 @@ main()
         d = dot(normal,light);
         if(d > 0.)
         {
-            vec3 diffuse = KD*d*uColor;
+            vec3 diffuse = KD*d*myColor;
             lighting += diffuse;
 
             vec3 refl = normalize( reflect( -light, normal ) );
