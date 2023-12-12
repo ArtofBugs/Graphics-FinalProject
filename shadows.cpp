@@ -134,9 +134,6 @@ int		NowCastle;				// current castle to edit
 float	LightX =  -2;
 float	LightY =  25;
 float	LightZ =  10.;
-float	EyeX = -2;
-float	EyeY = 25;
-float	EyeZ = 10.;
 
 GLuint	DepthFramebuffer;
 GLuint	DepthTexture;
@@ -348,9 +345,6 @@ Display( )
 		RenderWithShadows->SetUniformVariable((char*)"uLightY", LightY);
 		RenderWithShadows->SetUniformVariable((char*)"uLightZ", LightZ);
 
-		RenderWithShadows->SetUniformVariable((char*)"uEyeX", EyeX);
-		RenderWithShadows->SetUniformVariable((char*)"uEyeY", EyeY);
-		RenderWithShadows->SetUniformVariable((char*)"uEyeZ", EyeZ);
 		RenderWithShadows->SetUniformVariable((char*)"uLightSpaceMatrix", lightSpaceMatrix);
 
 		glm::vec3 eye = glm::vec3(0., 0., 8.);
