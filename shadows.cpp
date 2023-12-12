@@ -125,6 +125,8 @@ bool	ShadowOn;				// true means to see the shadow
 int		WhichProjection;		// ORTHO or PERSP
 int		Xmouse, Ymouse;			// mouse values
 float	Xrot, Yrot;				// rotation angles in degrees
+int		NowCastle;				// current castle to edit
+
 
 float	LightX =  -2.;
 float	LightY =  15.;
@@ -132,6 +134,21 @@ float	LightZ =  10.;
 
 GLuint	DepthFramebuffer;
 GLuint	DepthTexture;
+
+struct castle
+{
+	int numTowers;
+	bool roof;
+};
+
+struct castle Castles[] =
+{
+		{ 0,      false },
+};
+
+
+// number of castles
+const int NUMCASTLES = sizeof(Castles) / sizeof(struct castle);
 
 int		currNumTowers = 7;
 int		currNumCastles = 2;
@@ -1070,6 +1087,7 @@ Reset( )
 	ShadowOn = true;
 	WhichProjection = PERSP;
 	Xrot = Yrot = 0.;
+	NowCastle = 0;
 }
 
 
