@@ -117,6 +117,7 @@ int		DebugOn;				// != 0 means to print debugging info
 bool	DepthMapOn;				// true means to see the depth map
 bool	Frozen;
 GLuint  BaseList;
+GLuint	BaseRoofList;
 GLuint  SideList;
 GLuint  RoofList;
 GLuint	SphereList;
@@ -437,6 +438,15 @@ DisplayOneScene(GLSLProgram * prog )
 			color = glm::vec3(1., 1., 0.);
 			prog->SetUniformVariable((char*)"uColor", color);
 			glCallList(BaseList);
+			if (Castles[i].roof) {
+				model = glm::mat4(1.f);
+				model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * currCastle), BASE_HEIGHT, RING_RADIUS * sin(F_2_PI / currNumCastles * currCastle)));
+
+				prog->SetUniformVariable((char*)"uModel", model);
+				color = glm::vec3(1., 1., 0.);
+				prog->SetUniformVariable((char*)"uColor", color);
+				glCallList(BaseRoofList);
+			}
 
 			for (float j = 0.; j < (float)Castles[(int)i].numTowers; j++) {
 				// render a tower:
@@ -806,6 +816,13 @@ InitLists( )
 	glPopMatrix();
 	glEndList();
 
+	BaseRoofList = glGenLists(1);
+	glNewList(BaseRoofList, GL_COMPILE);
+	glPushMatrix();
+	OsuCone(BASE_RADIUS, 0.f, ROOF_HEIGHT, BASE_SEGMENTS, ROOF_STACKS);
+	glPopMatrix();
+	glEndList();
+
 	SphereList = glGenLists(1);
 	glNewList(SphereList, GL_COMPILE);
 	glPushMatrix();
@@ -916,6 +933,11 @@ Keyboard( unsigned char c, int x, int y )
 		case 'w':
 		case 'W':
 			Castles[NowCastle].numTowers--;
+			break;
+
+		case 'x':
+		case 'X':
+			Castles[NowCastle].roof = !Castles[NowCastle].roof;
 			break;
 		case 'q':
 		case 'Q':
