@@ -402,6 +402,7 @@ Display( )
 	glPushMatrix();
 	if (EditMode) {
 		LightX = RING_RADIUS * cos(F_2_PI / currNumCastles * NowCastle);
+		LightY = 20.;
 		LightZ = RING_RADIUS * sin(F_2_PI / currNumCastles * NowCastle);
 	}
 	else {
@@ -880,6 +881,42 @@ Keyboard( unsigned char c, int x, int y )
 			ShadowOn = !ShadowOn;
 			break;
 
+		case 'l':
+		case 'L':
+			NowCastle--;
+			if (NowCastle < 0) {
+				NowCastle += MAX_CASTLES;
+			}
+			NowCastle %= MAX_CASTLES;
+			while (!Castles[NowCastle].active) {
+				NowCastle--;
+				if (NowCastle < 0) {
+					NowCastle += MAX_CASTLES;
+				}
+			}
+			break;
+		case 'r':
+		case 'R':
+			NowCastle++;
+			NowCastle %= MAX_CASTLES;
+			while (!Castles[NowCastle].active) {
+				NowCastle++;
+				NowCastle %= MAX_CASTLES;
+			}
+			break;
+		case 'e':
+		case 'E':
+			EditMode = !EditMode;
+			break;
+
+		case 't':
+		case 'T':
+			Castles[NowCastle].numTowers++;
+			break;
+		case 'w':
+		case 'W':
+			Castles[NowCastle].numTowers--;
+			break;
 		case 'q':
 		case 'Q':
 		case ESCAPE:
