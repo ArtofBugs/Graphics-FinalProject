@@ -120,6 +120,7 @@ GLuint  BaseList;
 GLuint  SideList;
 GLuint  RoofList;
 GLuint	SphereList;
+GLuint	TorusList;
 int		MainWindow;				// window id for main graphics window
 float	Scale;					// scaling factor
 bool	ShadowOn;				// true means to see the shadow
@@ -129,11 +130,12 @@ float	Xrot, Yrot;				// rotation angles in degrees
 unsigned char* Texture;
 GLuint	CrumbTex;
 int		NowCastle;				// current castle to edit
+bool	EditMode = true;
 
 
-float	LightX =  -2;
-float	LightY =  55;
-float	LightZ =  10.;
+float	LightX =  0;
+float	LightY =  20;
+float	LightZ =  0.;
 
 GLuint	DepthFramebuffer;
 GLuint	DepthTexture;
@@ -174,6 +176,8 @@ const float 	BASE_RADIUS = 5.;
 
 const float		RING_RADIUS = 15.;
 const int		MAX_CASTLES = 10.;
+
+const float		LIGHT_FAR_CLIP = 100.f;
 
 const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
 
@@ -280,7 +284,7 @@ Display( )
 	glDisable(GL_NORMALIZE);
 
 	// these matrices are the equivalent of projection and view matrices
-	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.f, 60.f);
+	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.f, LIGHT_FAR_CLIP);
 	glm::vec3 lightPos(LightX, LightY, LightZ);
 	glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0., 0., 0.), glm::vec3(0., 1., 0.));
 
@@ -396,6 +400,15 @@ Display( )
 	}
 
 	glPushMatrix();
+	if (EditMode) {
+		LightX = RING_RADIUS * cos(F_2_PI / currNumCastles * NowCastle);
+		LightZ = RING_RADIUS * sin(F_2_PI / currNumCastles * NowCastle);
+	}
+	else {
+		LightX = 0;
+		LightY = 50;
+		LightZ = 0;
+	}
 	glTranslatef(LightX, LightY, LightZ);
 	glCallList(SphereList);
 	glPopMatrix();
@@ -412,13 +425,12 @@ DisplayOneScene(GLSLProgram * prog )
 	glm::vec3 color;
 
 
+	int currCastle = 0;
 	for (int i = 0; i < MAX_CASTLES; i++) {
-		printf("%d\n", MAX_CASTLES);
 		if (Castles[i].active) {
-			printf("%d\n", i);
 			// render a base:
 			model = glm::mat4(1.f);
-			model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * i), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * i)));
+			model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * currCastle), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * currCastle)));
 
 			prog->SetUniformVariable((char*)"uModel", model);
 			color = glm::vec3(1., 1., 0.);
@@ -429,7 +441,7 @@ DisplayOneScene(GLSLProgram * prog )
 				// render a tower:
 				model = glm::mat4(1.f);
 				model = glm::translate(model, glm::vec3((BASE_RADIUS + SIDE_RADIUS) * cos(F_2_PI / (float)Castles[(int)i].numTowers * j), 0, (BASE_RADIUS + SIDE_RADIUS) * sin(F_2_PI / (float)Castles[(int)i].numTowers * j)));
-				model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * i), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * i)));
+				model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * currCastle), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * currCastle)));
 				prog->SetUniformVariable((char*)"uModel", model);
 				glm::vec3 color = glm::vec3(1., 1., 0.);
 				prog->SetUniformVariable((char*)"uColor", color);
@@ -437,12 +449,14 @@ DisplayOneScene(GLSLProgram * prog )
 
 				model = glm::mat4(1.f);
 				model = glm::translate(model, glm::vec3((BASE_RADIUS + SIDE_RADIUS) * cos(F_2_PI / (float)Castles[(int)i].numTowers * j), TOWER_HEIGHT, (BASE_RADIUS + SIDE_RADIUS) * sin(F_2_PI / (float)Castles[(int)i].numTowers * j)));
-				model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * i), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * i)));
+				model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * currCastle), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * currCastle)));
 				prog->SetUniformVariable((char*)"uModel", model);
 				color = glm::vec3(1., 0., 0.);
 				prog->SetUniformVariable((char*)"uColor", color);
 				glCallList(RoofList);
 			}
+
+			currCastle++;
 		}
 
 	}
@@ -798,7 +812,6 @@ InitLists( )
 	glPopMatrix();
 	glEndList();
 
-
 	// create the axes:
 
 	AxesList = glGenLists( 1 );
@@ -822,15 +835,16 @@ Keyboard( unsigned char c, int x, int y )
 	{
 		case 'a':
 		case 'A':
-			for (int i = 0; i < MAX_CASTLES; i++) {
-				if (!Castles[i].active) {
-					printf("%d\n", i);
-					Castles[i].numTowers = 0;
-					Castles[i].roof = false;
-					Castles[i].active = true;
-					NowCastle = i;
-					currNumCastles++;
-					break;
+			if (currNumCastles < MAX_CASTLES) {
+				for (int i = 0; i < MAX_CASTLES; i++) {
+					if (!Castles[i].active) {
+						Castles[i].numTowers = 0;
+						Castles[i].roof = false;
+						Castles[i].active = true;
+						NowCastle = i;
+						currNumCastles++;
+						break;
+					}
 				}
 			}
 			break;
@@ -845,6 +859,17 @@ Keyboard( unsigned char c, int x, int y )
 
 		case 'd':
 		case 'D':
+			if (currNumCastles > 1) {
+				Castles[NowCastle].active = false;
+				for (int i = 0; i < MAX_CASTLES; i++) {
+					if (Castles[i].active) {
+						NowCastle = i;
+						break;
+					}
+				}
+				currNumCastles--;
+			}
+			break;
 		case 'm':
 		case 'M':
 			DepthMapOn = !DepthMapOn;
