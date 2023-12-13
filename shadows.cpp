@@ -131,10 +131,10 @@ float	Xrot, Yrot;				// rotation angles in degrees
 unsigned char* Texture;
 GLuint	CrumbTex;
 int		NowCastle;				// current castle to edit
-bool	EditMode = true;
+bool	EditMode = false;
 
 
-float	LightX =  0;
+float	LightX =  50;
 float	LightY =  20;
 float	LightZ =  0.;
 
@@ -265,15 +265,36 @@ Animate( )
 // draw the complete scene:
 
 void
-Display( )
+Display()
 {
-	if( DebugOn != 0 )
-		fprintf( stderr, "Display\n" );
+	if (DebugOn != 0)
+		fprintf(stderr, "Display\n");
 
 	glutSetWindow( MainWindow );
 
-	//first pass, render from light's perspective, store depth of scene in texture
 
+	if (!EditMode) {
+		LightX = 50;
+		LightY = 20;
+		LightZ = 0;
+	}
+	else {
+		int currCastle = 0;
+		for (int i = 0; i < MAX_CASTLES; i++) {
+			if (Castles[i].active) {
+				if (i == NowCastle) {
+					LightX = RING_RADIUS * cos(F_2_PI / currNumCastles * currCastle);
+					LightY = 20.;
+					LightZ = RING_RADIUS * sin(F_2_PI / currNumCastles * currCastle);
+					break;
+				}
+				currCastle++;
+			}
+		}
+	}
+
+	//first pass, render from light's perspective, store depth of scene in texture
+	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, DepthTexture);
 	glBindFramebuffer(GL_FRAMEBUFFER, DepthFramebuffer);
@@ -401,11 +422,6 @@ Display( )
 	}
 
 	glPushMatrix();
-	if (!EditMode) {
-		LightX = 0;
-		LightY = 20;
-		LightZ = 0;
-	}
 	glTranslatef(LightX, LightY, LightZ);
 	glCallList(SphereList);
 	glPopMatrix();
@@ -460,12 +476,6 @@ DisplayOneScene(GLSLProgram * prog )
 				color = glm::vec3(1., 0., 0.);
 				prog->SetUniformVariable((char*)"uColor", color);
 				glCallList(RoofList);
-			}
-
-			if (i == NowCastle) {
-				LightX = RING_RADIUS * cos(F_2_PI / currNumCastles * currCastle);
-				LightY = 20.;
-				LightZ = RING_RADIUS * sin(F_2_PI / currNumCastles * currCastle);
 			}
 
 			currCastle++;
