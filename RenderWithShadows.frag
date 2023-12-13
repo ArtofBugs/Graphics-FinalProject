@@ -2,7 +2,7 @@
 
 uniform vec3      uColor;
 uniform sampler2D uShadowMap;
-uniform sampler2D uTexUnit;
+uniform sampler2D uTexUnit1;
 uniform int       uShadowsOn;
 
 in vec4 vFragPosLightSpace;
@@ -14,8 +14,8 @@ in vec2 vST;
 out vec4 fFragColor;
 
 const float BIAS =  0.01;
-const vec3  SPECULAR_COLOR = vec3( .1, .1, .1 );
-const float SHININESS = 0.1;
+const vec3  SPECULAR_COLOR = vec3( 1., 1., 1. );
+const float SHININESS = 8;
 
 const float KA = 0.20;
 const float KD = 0.60;
@@ -53,7 +53,7 @@ main()
     float d = 0.;
     float s = 0.;
     
-    vec3 myColor = texture(uTexUnit, vST).rgb;
+    vec3 myColor = texture(uTexUnit1, vST).rgb;
 	//myColor = vec3( 0.8 * dot(vNs, vEs) * dot(vNs, vEs) * 0.1, 0.7 * dot(vNs, vEs), 0.5 * dot(vNs, vEs) * dot(vNs, vEs) * 0.1);
 
     vec3 lighting = KA * myColor;

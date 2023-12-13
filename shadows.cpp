@@ -132,7 +132,7 @@ int		NowCastle;				// current castle to edit
 
 
 float	LightX =  -2;
-float	LightY =  25;
+float	LightY =  55;
 float	LightZ =  10.;
 
 GLuint	DepthFramebuffer;
@@ -146,15 +146,11 @@ struct castle
 
 struct castle Castles[] =
 {
-		{ 0,      false },
+		{ 5,      false },
+		{ 10,      false },
 };
 
-
-// number of castles
-const int NUMCASTLES = sizeof(Castles) / sizeof(struct castle);
-
-int		currNumTowers = 7;
-int		currNumCastles = 2;
+int		currNumCastles = sizeof(Castles) / sizeof(struct castle);
 
 const int		TOWER_SEGMENTS = 50;
 const float 	TOWER_HEIGHT = 10.;
@@ -201,7 +197,6 @@ void	Visibility( int );
 void	Axes( float );
 void	HsvRgb( float[3], float [3] );
 void	Cross(float v1[3], float v2[3], float vout[3]);
-void	DrawPoint(struct point *p);
 float	Unit(float vin[3], float vout[3]);
 
 // these are here for when you need them -- just uncomment the ones you need:
@@ -262,6 +257,9 @@ Display( )
 	glutSetWindow( MainWindow );
 
 	//first pass, render from light's perspective, store depth of scene in texture
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, DepthTexture);
 	glBindFramebuffer(GL_FRAMEBUFFER, DepthFramebuffer);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glDrawBuffer(GL_NONE);
@@ -271,7 +269,7 @@ Display( )
 	glDisable(GL_NORMALIZE);
 
 	// these matrices are the equivalent of projection and view matrices
-	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.f, 20.f);
+	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.f, 60.f);
 	glm::vec3 lightPos(LightX, LightY, LightZ);
 	glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0., 0., 0.), glm::vec3(0., 1., 0.));
 
@@ -336,9 +334,6 @@ Display( )
 	else
 	{
 		RenderWithShadows->Use();
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, CrumbTex);
-		RenderWithShadows->SetUniformVariable((char*)"uTexUnit", 0);
 		RenderWithShadows->SetUniformVariable((char*)"uShadowMap", 0);
 		RenderWithShadows->SetUniformVariable((char*)"uShadowsOn", ShadowOn ? 1 : 0 );
 		RenderWithShadows->SetUniformVariable((char*)"uLightX", LightX);
@@ -346,6 +341,10 @@ Display( )
 		RenderWithShadows->SetUniformVariable((char*)"uLightZ", LightZ);
 
 		RenderWithShadows->SetUniformVariable((char*)"uLightSpaceMatrix", lightSpaceMatrix);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, CrumbTex);
+		RenderWithShadows->SetUniformVariable((char*)"uTexUnit1", 1);
 
 		glm::vec3 eye = glm::vec3(0., 0., 8.);
 		glm::vec3 look = glm::vec3(0., 0., 0.);
@@ -412,10 +411,10 @@ DisplayOneScene(GLSLProgram * prog )
 		prog->SetUniformVariable((char*)"uColor", color);
 		glCallList(BaseList);
 
-		for (float j = 0.; j < (float)currNumTowers; j++) {
+		for (float j = 0.; j < (float)Castles[(int)i].numTowers; j++) {
 			// render a tower:
 			model = glm::mat4(1.f);
-			model = glm::translate(model, glm::vec3((BASE_RADIUS + SIDE_RADIUS) * cos(F_2_PI / currNumTowers * j), 0, (BASE_RADIUS + SIDE_RADIUS) * sin(F_2_PI / currNumTowers * j)));
+			model = glm::translate(model, glm::vec3((BASE_RADIUS + SIDE_RADIUS) * cos(F_2_PI / (float)Castles[(int)i].numTowers * j), 0, (BASE_RADIUS + SIDE_RADIUS) * sin(F_2_PI / (float)Castles[(int)i].numTowers * j)));
 			model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * i), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * i)));
 			prog->SetUniformVariable((char*)"uModel", model);
 			glm::vec3 color = glm::vec3(1., 1., 0.);
@@ -423,7 +422,7 @@ DisplayOneScene(GLSLProgram * prog )
 			glCallList(SideList);
 
 			model = glm::mat4(1.f);
-			model = glm::translate(model, glm::vec3((BASE_RADIUS + SIDE_RADIUS) * cos(F_2_PI / currNumTowers * j), TOWER_HEIGHT, (BASE_RADIUS + SIDE_RADIUS) * sin(F_2_PI / currNumTowers * j)));
+			model = glm::translate(model, glm::vec3((BASE_RADIUS + SIDE_RADIUS) * cos(F_2_PI / (float)Castles[(int)i].numTowers * j), TOWER_HEIGHT, (BASE_RADIUS + SIDE_RADIUS) * sin(F_2_PI / (float)Castles[(int)i].numTowers * j)));
 			model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * i), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * i)));
 			prog->SetUniformVariable((char*)"uModel", model);
 			color = glm::vec3(1., 0., 0.);
@@ -627,21 +626,6 @@ InitGraphics( )
 	// all other setups go here, such as GLSLProgram and KeyTime setups:
 
 
-	glGenTextures(1, &CrumbTex);
-	int nums, numt;
-	char* file = (char*)"crumbs2.bmp";  // taken from https://pixabay.com/photos/bread-loaf-artisan-artisan-bread-1510155/
-	                                    // then cropped, converted to bmp, and then taken through GIMP to fix it (thank you Prof. Bailey!)
-	Texture = BmpToTexture(file, &nums, &numt);
-	if (Texture == NULL)
-		fprintf(stderr, "Cannot open texture '%s'\n", file);
-	else
-		fprintf(stderr, "Opened '%s': width = %d ; height = %d\n", file, nums, numt);
-	glBindTexture(GL_TEXTURE_2D, CrumbTex);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, 3, nums, numt, 0, GL_RGB, GL_UNSIGNED_BYTE, Texture);
 
 
 
@@ -705,6 +689,22 @@ InitGraphics( )
 	glReadBuffer(GL_NONE);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glGenTextures(1, &CrumbTex);
+	int nums, numt;
+	char* file = (char*)"crumbs2.bmp";  // taken from https://pixabay.com/photos/bread-loaf-artisan-artisan-bread-1510155/
+	// then cropped, converted to bmp, and then taken through GIMP to fix it (thank you Prof. Bailey!)
+	Texture = BmpToTexture(file, &nums, &numt);
+	if (Texture == NULL)
+		fprintf(stderr, "Cannot open texture '%s'\n", file);
+	else
+		fprintf(stderr, "Opened '%s': width = %d ; height = %d\n", file, nums, numt);
+	glBindTexture(GL_TEXTURE_2D, CrumbTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, 3, nums, numt, 0, GL_RGB, GL_UNSIGNED_BYTE, Texture);
 }
 
 float
