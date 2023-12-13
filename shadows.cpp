@@ -140,17 +140,27 @@ GLuint	DepthTexture;
 
 struct castle
 {
+	bool active;
 	int numTowers;
 	bool roof;
 };
 
 struct castle Castles[] =
 {
-		{ 5,      false },
-		{ 10,      false },
+		{ true, 0,      false },
+		{ false, 0,      false },
+		{ false, 0,      false },
+		{ false, 0,      false },
+		{ false, 0,      false },
+		{ false, 0,      false },
+		{ false, 0,      false },
+		{ false, 0,      false },
+		{ false, 0,      false },
+		{ false, 0,      false },
+		{ false, 0,      false },
 };
 
-int		currNumCastles = sizeof(Castles) / sizeof(struct castle);
+int		currNumCastles = 1;
 
 const int		TOWER_SEGMENTS = 50;
 const float 	TOWER_HEIGHT = 10.;
@@ -162,7 +172,8 @@ const int		BASE_SEGMENTS = 50;
 const float 	BASE_HEIGHT = 8.;
 const float 	BASE_RADIUS = 5.;
 
-const float		RING_RADIUS = 10.;
+const float		RING_RADIUS = 15.;
+const int		MAX_CASTLES = 10.;
 
 const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
 
@@ -401,33 +412,37 @@ DisplayOneScene(GLSLProgram * prog )
 	glm::vec3 color;
 
 
-	for (float i = 0; i < (float)currNumCastles; i++) {
-		// render a base:
-		model = glm::mat4(1.f);
-		model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * i), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * i)));
-
-		prog->SetUniformVariable((char*)"uModel", model);
-		color = glm::vec3(1., 1., 0.);
-		prog->SetUniformVariable((char*)"uColor", color);
-		glCallList(BaseList);
-
-		for (float j = 0.; j < (float)Castles[(int)i].numTowers; j++) {
-			// render a tower:
+	for (int i = 0; i < MAX_CASTLES; i++) {
+		printf("%d\n", MAX_CASTLES);
+		if (Castles[i].active) {
+			printf("%d\n", i);
+			// render a base:
 			model = glm::mat4(1.f);
-			model = glm::translate(model, glm::vec3((BASE_RADIUS + SIDE_RADIUS) * cos(F_2_PI / (float)Castles[(int)i].numTowers * j), 0, (BASE_RADIUS + SIDE_RADIUS) * sin(F_2_PI / (float)Castles[(int)i].numTowers * j)));
 			model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * i), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * i)));
-			prog->SetUniformVariable((char*)"uModel", model);
-			glm::vec3 color = glm::vec3(1., 1., 0.);
-			prog->SetUniformVariable((char*)"uColor", color );
-			glCallList(SideList);
 
-			model = glm::mat4(1.f);
-			model = glm::translate(model, glm::vec3((BASE_RADIUS + SIDE_RADIUS) * cos(F_2_PI / (float)Castles[(int)i].numTowers * j), TOWER_HEIGHT, (BASE_RADIUS + SIDE_RADIUS) * sin(F_2_PI / (float)Castles[(int)i].numTowers * j)));
-			model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * i), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * i)));
 			prog->SetUniformVariable((char*)"uModel", model);
-			color = glm::vec3(1., 0., 0.);
+			color = glm::vec3(1., 1., 0.);
 			prog->SetUniformVariable((char*)"uColor", color);
-			glCallList(RoofList);
+			glCallList(BaseList);
+
+			for (float j = 0.; j < (float)Castles[(int)i].numTowers; j++) {
+				// render a tower:
+				model = glm::mat4(1.f);
+				model = glm::translate(model, glm::vec3((BASE_RADIUS + SIDE_RADIUS) * cos(F_2_PI / (float)Castles[(int)i].numTowers * j), 0, (BASE_RADIUS + SIDE_RADIUS) * sin(F_2_PI / (float)Castles[(int)i].numTowers * j)));
+				model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * i), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * i)));
+				prog->SetUniformVariable((char*)"uModel", model);
+				glm::vec3 color = glm::vec3(1., 1., 0.);
+				prog->SetUniformVariable((char*)"uColor", color);
+				glCallList(SideList);
+
+				model = glm::mat4(1.f);
+				model = glm::translate(model, glm::vec3((BASE_RADIUS + SIDE_RADIUS) * cos(F_2_PI / (float)Castles[(int)i].numTowers * j), TOWER_HEIGHT, (BASE_RADIUS + SIDE_RADIUS) * sin(F_2_PI / (float)Castles[(int)i].numTowers * j)));
+				model = glm::translate(model, glm::vec3(RING_RADIUS * cos(F_2_PI / currNumCastles * i), 0, RING_RADIUS * sin(F_2_PI / currNumCastles * i)));
+				prog->SetUniformVariable((char*)"uModel", model);
+				color = glm::vec3(1., 0., 0.);
+				prog->SetUniformVariable((char*)"uColor", color);
+				glCallList(RoofList);
+			}
 		}
 
 	}
@@ -805,6 +820,20 @@ Keyboard( unsigned char c, int x, int y )
 
 	switch( c )
 	{
+		case 'a':
+		case 'A':
+			for (int i = 0; i < MAX_CASTLES; i++) {
+				if (!Castles[i].active) {
+					printf("%d\n", i);
+					Castles[i].numTowers = 0;
+					Castles[i].roof = false;
+					Castles[i].active = true;
+					NowCastle = i;
+					currNumCastles++;
+					break;
+				}
+			}
+			break;
 		case 'f':
 		case 'F':
 			Frozen = !Frozen;
