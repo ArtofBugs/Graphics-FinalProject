@@ -401,14 +401,9 @@ Display( )
 	}
 
 	glPushMatrix();
-	if (EditMode) {
-		LightX = RING_RADIUS * cos(F_2_PI / currNumCastles * NowCastle);
-		LightY = 20.;
-		LightZ = RING_RADIUS * sin(F_2_PI / currNumCastles * NowCastle);
-	}
-	else {
+	if (!EditMode) {
 		LightX = 0;
-		LightY = 50;
+		LightY = 20;
 		LightZ = 0;
 	}
 	glTranslatef(LightX, LightY, LightZ);
@@ -465,6 +460,12 @@ DisplayOneScene(GLSLProgram * prog )
 				color = glm::vec3(1., 0., 0.);
 				prog->SetUniformVariable((char*)"uColor", color);
 				glCallList(RoofList);
+			}
+
+			if (i == NowCastle) {
+				LightX = RING_RADIUS * cos(F_2_PI / currNumCastles * currCastle);
+				LightY = 20.;
+				LightZ = RING_RADIUS * sin(F_2_PI / currNumCastles * currCastle);
 			}
 
 			currCastle++;
